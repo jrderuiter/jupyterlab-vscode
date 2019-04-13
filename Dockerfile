@@ -1,6 +1,11 @@
-FROM python:3.7.3-stretch
+FROM python:3.7.3-slim
 
 ENV LANG=C.UTF-8
+
+# Install some basic utilities.
+RUN apt-get update \
+    && apt-get install -y apt-transport-https lsb-release curl gnupg \
+    && apt-get clean
 
 # Install Jupyter.
 RUN pip install jupyter ipywidgets \
@@ -10,11 +15,8 @@ RUN pip install jupyter ipywidgets \
 RUN pip install jupyterlab \
     && jupyter serverextension enable --py jupyterlab
 
-# Install a recent version of nodejs.
-RUN apt-get update \
-    && apt-get install -y apt-transport-https lsb-release \
-    && VERSION=node_11.x \
-    && DISTRO="$(lsb_release -s -c)" \
+# Install a recent version of nodejs (required for proxy extension).
+RUN VERSION=node_11.x && DISTRO="$(lsb_release -s -c)" \
     && curl -sSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - \
     && echo "deb https://deb.nodesource.com/$VERSION $DISTRO main" | tee /etc/apt/sources.list.d/nodesource.list \
     && echo "deb-src https://deb.nodesource.com/$VERSION $DISTRO main" | tee -a /etc/apt/sources.list.d/nodesource.list \
