@@ -13,7 +13,7 @@ docker build -t jrderuiter/jupyterlab-vscode .
 Running the image:
 
 ```
-docker run --rm -p 8888:8888 jupyterlab
+docker run --rm -p 8888:8888 jrderuiter/jupyterlab-vscode
 ```
 
 Files/notebooks can be mounted into the `/work` directory, which is the
