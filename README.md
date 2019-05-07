@@ -19,6 +19,12 @@ docker run --rm -p 8888:8888 jrderuiter/jupyterlab-vscode
 Files/notebooks can be mounted into the `/work` directory, which is the
 default working directory for JupyterLab and vscode-server.
 
+Or more simply, using docker-compose:
+
+```
+docker-compose up --build
+```
+
 ## References
 
 Based on:

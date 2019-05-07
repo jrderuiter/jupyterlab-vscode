@@ -1,18 +1,17 @@
-FROM python:3.7.3-slim
+FROM python:3.7-slim
 
 ENV LANG=C.UTF-8
 
 # Install some basic utilities.
 RUN apt-get update \
-    && apt-get install -y apt-transport-https lsb-release curl gnupg \
+    && apt-get install -y apt-transport-https lsb-release curl gnupg git \
     && apt-get clean
 
 # Install Jupyter.
-RUN pip install jupyter ipywidgets \
-    && jupyter nbextension enable --py widgetsnbextension
-
-# Install JupyterLab.
-RUN pip install jupyterlab \
+# Note that we pin tornado to < 6, as we encountered issues with
+# websockets with tornado 6.
+RUN pip install jupyter==1.0.0 ipywidgets==7.4.2 jupyterlab==0.35.4 'tornado<6' \
+    && jupyter nbextension enable --py widgetsnbextension \
     && jupyter serverextension enable --py jupyterlab
 
 # Install a recent version of nodejs (required for proxy extension).
@@ -25,30 +24,35 @@ RUN VERSION=node_11.x && DISTRO="$(lsb_release -s -c)" \
     && apt-get clean
 
 # Install proxy extension.
-RUN pip install https://github.com/jupyterhub/jupyter-server-proxy/archive/7ac0125.zip \
+RUN pip install jupyter-server-proxy==1.0.1 'tornado<6' \
     && jupyter serverextension enable --py jupyter_server_proxy \
     && jupyter labextension install jupyterlab-server-proxy \
     && jupyter lab build
 
 # Download and install VS Code server
-RUN curl -L -O https://github.com/codercom/code-server/releases/download/1.604-vsc1.32.0/code-server1.604-vsc1.32.0-linux-x64.tar.gz \
-    && tar xzf code-server1.604-vsc1.32.0-linux-x64.tar.gz \
-    && mv code-server1.604-vsc1.32.0-linux-x64/code-server /usr/local/bin/ \
-    && rm -rf code-server1.604-vsc1.32.0-linux-x64 code-server1.604-vsc1.32.0-linux-x64.tar.gz
+RUN curl -L -O https://github.com/cdr/code-server/releases/download/1.939-vsc1.33.1/code-server1.939-vsc1.33.1-linux-x64.tar.gz \
+    && tar xzf code-server1.939-vsc1.33.1-linux-x64.tar.gz \
+    && mv code-server1.939-vsc1.33.1-linux-x64/code-server /usr/local/bin/ \
+    && rm -rf code-server1.939-vsc1.33.1-linux-x64 code-server1.939-vsc1.33.1-linux-x64.tar.gz
 
 # Install the VS code proxy.
 COPY jupyter-vscode-proxy /etc/jupyter-vscode-proxy
 RUN pip install /etc/jupyter-vscode-proxy
 
-# Install any pre-defined Python requirements.
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install -r /tmp/requirements.txt && rm -rf /tmp/requirements.txt
+# Install packages by manually unpacking vsix archives (useful when stuck behind
+# proxies, which are not yet supported by code server).
+# COPY ms-python.2019.3.6558.vsix /tmp
+# RUN mkdir -p /tmp/ms-python.2019.3.6558 /extensions \
+#     && apt-get update && apt-get install -y bsdtar && apt-get clean \
+#     && bsdtar -C /tmp/ms-python.2019.3.6558 -xvzf /tmp/ms-python.2019.3.6558.vsix \
+#     && mv /tmp/ms-python.2019.3.6558/extension /extensions/ms-python.2019.3.6558 \
+#     && rm -rf /tmp/ms-python.2019.3.6558*
 
-# Expose Jupyter port & entrypoint.
 EXPOSE 8888
 
 RUN mkdir -p /work
 WORKDIR /work
 
+# Use 'notebook' instead of 'lab' for Jupyter Notebook.
 ENTRYPOINT ["jupyter", "lab"]
 CMD ["--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]

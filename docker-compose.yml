@@ -1,0 +1,14 @@
+version: "3.7"
+services:
+  jupyter:
+    build: .
+    volumes:
+       - work-data:/work
+    ports:
+      - "8888:8888"
+    environment:
+      CODE_WORKING_DIR: /work
+      CODE_DATA_DIR: /work/.vscode
+
+volumes:
+  work-data:
